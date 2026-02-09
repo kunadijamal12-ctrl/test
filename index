@@ -1,0 +1,179 @@
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AoS | Art of Search Terminal</title>
+    <style>
+        /* CSS KHUSUS TEMA ART OF SEARCH */
+        * { box-sizing: border-box; }
+        body {
+            background-color: #050505; /* Hitam pekat */
+            color: #00ff41; /* Hijau Matrix/Terminal */
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .terminal-box {
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid #00ff41;
+            padding: 20px;
+            background: #0a0a0a;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 1px solid #00ff41;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
+        h1 { font-size: 1.2rem; margin: 0; letter-spacing: 3px; }
+
+        .status-bar {
+            font-size: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            color: #008f11;
+        }
+
+        /* TABLE LEADERBOARD */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        th {
+            text-align: left;
+            border-bottom: 1px solid #008f11;
+            padding: 10px 5px;
+            color: #fff;
+        }
+
+        td { padding: 10px 5px; border-bottom: 1px solid #111; }
+
+        .rank { width: 10%; color: #888; }
+        .user { width: 50%; color: #00ff41; font-weight: bold; }
+        .time { width: 40%; font-size: 0.65rem; color: #008f11; text-align: right; }
+
+        /* TOMBOL KE GOOGLE FORM */
+        .action-area {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .btn-link {
+            display: inline-block;
+            text-decoration: none;
+            color: #000;
+            background: #00ff41;
+            padding: 10px 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-link:hover {
+            background: #fff;
+            box-shadow: 0 0 10px #fff;
+        }
+
+        .loading { text-align: center; font-style: italic; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="terminal-box">
+    <header>
+        <h1>ART OF SEARCH</h1>
+    </header>
+
+    <div class="status-bar">
+        <span>MODE: LIVE_DATABASE</span>
+        <span id="update-clock">REFRESHING...</span>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="rank">#</th>
+                <th class="user">SEARCHER_ID</th>
+                <th class="time">TIMESTAMP</th>
+            </tr>
+        </thead>
+        <tbody id="tabel-leaderboard">
+            <tr><td colspan="3" class="loading">Syncing with satellite...</td></tr>
+        </tbody>
+    </table>
+
+    <div class="action-area">
+        <p style="font-size: 0.7rem; color: #555; margin-bottom: 10px;">FOUND SOMETHING?</p>
+        <a href="" target="_blank" class="btn-link">> INPUT CREDENTIALS</a>
+    </div>
+</div>
+
+<script>
+    // 1. GANTI INI dengan link CSV dari "Publish to Web" Google Sheets kamu
+    const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vScPLPcDrr23J6SCkIFdfE_qFF5ft2x6U3dnfoVCOsoaXjSJkkMe4jx9jHCqq1rBfuOG9Ud_aFqfUxV/pub?gid=1051054626&single=true&output=csv";
+
+    async function ambilData() {
+        try {
+            const response = await fetch(urlCSV);
+            const dataText = await response.text();
+            
+            // Pecah data per baris dan buang baris pertama (header)
+            const baris = dataText.split("\n").slice(1); 
+            
+            let tabelHtml = "";
+            let count = 0;
+
+            baris.forEach((item) => {
+                // Gunakan regex untuk memisah koma agar lebih aman dari karakter aneh
+                const kolom = item.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
+                
+                if (kolom.length >= 2 && count < 10) { // Limit Top 10
+                    count++;
+                    // Bersihkan tanda kutip jika ada
+                    const timestamp = kolom[0].replace(/"/g, "");
+                    const username = kolom[1].replace(/"/g, "");
+
+                    tabelHtml += `
+                        <tr>
+                            <td class="rank">${count}</td>
+                            <td class="user">${username}</td>
+                            <td class="time">${timestamp}</td>
+                        </tr>`;
+                }
+            });
+
+            if (count === 0) {
+                tabelHtml = "<tr><td colspan='3' class='loading'>Waiting for first breach...</td></tr>";
+            }
+            
+            document.getElementById("tabel-leaderboard").innerHTML = tabelHtml;
+            document.getElementById("update-clock").innerText = "STATUS: SYNCED";
+            
+        } catch (error) {
+            console.error("Gagal ambil data:", error);
+            document.getElementById("update-clock").innerText = "STATUS: ERROR";
+        }
+    }
+
+    // Jalankan setiap 10 detik
+    setInterval(ambilData, 10000);
+    // Jalankan pertama kali saat halaman dibuka
+    ambilData();
+</script>
+
+</body>
+</html>
